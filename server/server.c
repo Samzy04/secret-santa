@@ -6,7 +6,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <pthread.h>
-#include "linked_list_functions.h"
+#include "linked_list_functions.c"
 
 #define PORT 12345
 #define BUFFER_SIZE 100
