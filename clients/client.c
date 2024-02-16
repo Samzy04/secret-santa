@@ -6,17 +6,26 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-
-
 #define PORT 12345
+#define BUFFER_SIZE 100
 
-int main(){
+// Function to send data to the server
+void send_to_server(int sockfd, const char* message) {
+    send(sockfd, message, strlen(message), 0);
+}
+
+// Function to receive data from the server
+void receive_from_server(int sockfd, char* buffer) {
+    read(sockfd, buffer, BUFFER_SIZE);
+}
+
+int main() {
     int sock = 0;
     struct sockaddr_in serv_addr;
-    char name[50];
+    char name[BUFFER_SIZE];
 
     // Create socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("\n Socket creation error \n");
         return -1;
     }
@@ -30,31 +39,36 @@ int main(){
     }
 
     // Connect to server
-    if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
+    if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         printf("\nConnection Failed\n");
         return -1;
     }
 
     // Send registration request
-    int draw = 0;
-    while(draw != 2){
-        printf("Enter your name else enter draw to pick a name: ");
+    while (1) {
+        printf("Enter your name or enter 'draw' to initiate the draw: ");
         fgets(name, sizeof(name), stdin);
         name[strcspn(name, "\n")] = 0;
 
-        int nameLength = strlen(name);
-        send(sock, &nameLength, sizeof(int), 0); 
-        send(sock, name, nameLength, 0); 
+        if (strlen(name) > 0) {
+            // Sending registration request to the server
+            char message[BUFFER_SIZE];
+            snprintf(message, sizeof(message), "REGISTER %s", name);
+            send_to_server(sock, message);
 
-        printf("Registration request sent\n");
-        if(strcmp(name,"draw\n")==0){
-            printf("Draw requesnt sent\n");
-            send(sock,&draw,sizeof(int),0);
-            draw = 2;
+            // Receive response from the server
+            char buffer[BUFFER_SIZE] = {0};
+            receive_from_server(sock, buffer);
+            printf("Server Response: %s\n", buffer);
+
+            // Check if draw request
+            if (strcmp(name, "draw") == 0) {
+                printf("Draw request sent\n");
+                send_to_server(sock, "DRAW");
+                break;
+            }
         }
-
     }
-    
 
     // Close socket
     close(sock);
